@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const uniqueValidator = require('mongoose-unique-validator')
 const userSchema = mongoose.Schema({
     username: { type: String, unique: [true, 'This username has been used before.'], required: [true, 'Username is required.'] },

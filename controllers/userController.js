@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const passport = require('passport')
 const User = mongoose.model('User')
@@ -43,11 +43,30 @@ module.exports = {
             if(!user) return res.status(401).json({auth:false, message:'Can\'t login with these credentials.'})
             else user.comparePassword(req.body.password,(err,isMatch)=>{
                 if (isMatch && !err){
-                    let token = jwt.sign(user.toJSON(),secret,{expiresIn:6000})
+                    let token = jwt.sign({id:user._id},secret,{expiresIn:6000})
                     user.password = null
                     return res.status(202).json({auth:true, token: 'Bearer ' + token,user})
                 } else return res.status(401).json({auth:true, message:'Can\'t login with these credentials.'})
             })
         })
+    },
+    auth(req,res){
+        let token = req.headers.authorization
+        token = token.substr(token.indexOf(' ')+1)
+        try{
+            jwt.verify(token,secret,(err,decoded)=>{
+                User.findOne({_id:decoded.id},(err,user)=>{
+                    if(user){
+                        user.password = null
+                        res.status(200).json({auth:true,user:user})
+                    }else{
+                        res.status(400).json({auth:false,message:'Invalid token.'})
+                    }
+                })
+            })
+        }catch(err){
+            console.log(err)
+            res.status(401).json({auth:false,message:'User doesn\'t exist.'})
+        }
     }
 }
