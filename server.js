@@ -10,6 +10,7 @@ const router = express.Router()
 const mongoose = require('mongoose')
 
 require('./models/User')
+require('./models/Team')
 const cors = require('cors')
 const morgan = require('morgan')
 const passport = require('passport')
@@ -24,7 +25,9 @@ require('./config/db')
 
 //server routes
 const r_user = require('./routes/user')
+const r_team = require('./routes/team')
 router.use('/user', r_user)
+router.use('/user/team', r_team)
 app.use('/api/v2', router)
 //server spin up
 app.set('port',process.env.API_PORT || 8081)

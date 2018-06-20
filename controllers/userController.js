@@ -51,8 +51,8 @@ module.exports = {
         })
     },
     auth(req,res){
-        let token = req.headers.authorization
-        token = token.substr(token.indexOf(' ')+1)
+        if(!req.headers.authorization) return res.status(401).json({auth:false,message:'Invalid token.'})
+        let token = req.headers.authorization.substr(req.headers.authorization.indexOf(' ')+1)
         try{
             jwt.verify(token,secret,(err,decoded)=>{
                 User.findOne({_id:decoded.id},(err,user)=>{
