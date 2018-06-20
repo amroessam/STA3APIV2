@@ -33,7 +33,8 @@ module.exports = {
                 else return res.status(400).json({auth:false,message:'Unexpexted Error'})
             }
             newUser.password = null
-            res.send({auth:true,message:'User created succesfully.',user:newUser})
+            let token = jwt.sign({id:newUser._id},secret,{expiresIn:6000})
+            res.send({auth:true,message:'User created succesfully.',user:newUser,token:'Bearer ' + token})
         })
 
     },

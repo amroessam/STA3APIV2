@@ -10,4 +10,4 @@ const TeamSchema = mongoose.Schema({
     _messages: [],
 }, { timestamp: true })
 
-const Team = module.exports = mongoose.model('Team', TeamSchema)
+const Team = mongoose.model('Team', TeamSchema)
