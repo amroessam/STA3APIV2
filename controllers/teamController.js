@@ -57,6 +57,9 @@ module.exports = {
         try {
             jwt.verify(token, secret, (err, decoded) => {
                 User.findOne({ _id: decoded.id }, (err, user) => {
+                    if(err){
+                        return res.status(400).json({ auth: false, message: 'Token expired please log in again.' })
+                    }
                     if (user) {
                         let newTeam = new Team({
                             teamName: req.body.teamName,
@@ -66,17 +69,15 @@ module.exports = {
                         newTeam._members.push(decoded.id)
                         newTeam.save((err)=>{
                             if(err){
-                                console.log(err)
                                 return res.status(400).json({success:false,message:'An Error has occured'})
                             }
                             user._teams.push(newTeam._id)
                             user._adminTeams.push(newTeam._id)
-                            console.log(user)
                             user.save()
                         })
-                        return res.status(200).json({ success: true, teams: user._adminTeams })
+                        return res.status(200).json({ success: true, teamID: newTeam._id })
                     } else {
-                        res.status(400).json({ auth: false, message: 'Invalid token.' })
+                        return res.status(400).json({ auth: false, message: 'Invalid token.' })
                     }
                 })
             })
@@ -84,6 +85,54 @@ module.exports = {
             console.log(err)
             res.status(401).json({ auth: false, message: 'User doesn\'t exist.' })
         }
-    }
+    },
+    addTeamMember(req,res){
+        let token = req.headers.authorization
+        token = token.substr(token.indexOf(' ') + 1)
+        try {
+            jwt.verify(token, secret, (err, decoded) => {
+                User.findOne({ _id: decoded.id }, (err, user) => {
+                    if(err) {return res.status(400).json({success: false, message:'An error occured.'})}
+                    if (user) {
+                        user._adminTeams.forEach(t=>{
+                            if(t.toString() === req.body.teamID){
+                                User.findOne({username:req.body.newTeamMember},(err,newTeamMember)=>{
+                                    if(err) return res.status(400).json({ success: false, message:'User doesn\'t exist' })
+                                    Team.findByIdAndUpdate(req.body.teamID,{$push:{_members:newTeamMember._id}},(err,team)=>{
+                                        if(err) {return res.status(400).json({success: false, message:'Team doesn\'t exist'})}
+                                        newTeamMember._teams.push(team._id)
+                                        if(req.body.newTeamMemberAdmin){newTeamMember._adminTeams.push(team._id)}
+                                    })
+                                })
+                                // console.log(newMember)
+                                // Team.findOne({_id:req.body.teamID,{$push:{_members:}})
+                                // ,(err,team)=>{
+                                //     if (team){
+                                //         User.findOne({username:req.body.newTeamMember},{$push:{_members:}})
+                                //         // (err,newMember)=>{
+                                //         //     team._members.push(newMember._id)
+                                //         //     if(req.body.newTeamMemberAdmin){
+                                //         //         team._adminMembers.push(newMember._id)
+                                //         //     }
+                                //         // }
+                                //         console.log(team)
+                                //         team.save()   
+                                //         return res.status(200).json({ success: true })                                   
+                                //     }else{
+                                //         return res.status(400).json({ success: false })
+                                //     }
 
+                                // }
+                            }
+                        })
+                    } else {
+                        return res.status(400).json({ auth: false, message: 'Invalid token.' })
+                    }
+                })
+            })
+        } catch (err) {
+            console.log(err)
+            return res.status(401).json({ auth: false, message: 'User doesn\'t exist.' })
+        }
+    }
 }

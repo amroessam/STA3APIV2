@@ -6,4 +6,5 @@ const passport = require('passport')
 team.get('/', teamController.index)
 team.get('/getAllTeams', teamController.getAllTeams)
 team.post('/newTeam', teamController.createNewTeam)
+team.post('/addMember', teamController.addTeamMember)
 module.exports = team
