@@ -23,7 +23,6 @@ module.exports = {
         })
         newUser.save((err)=>{
             if(err){
-                console.log(err)
                 if(err.errors['email']){
                     if(err.errors['email'].kind == 'unique' && err.errors['email']) return res.status(400).json({auth:false,message:'This email has been used before, please check your inbox on how to recover your password.'})
                 }

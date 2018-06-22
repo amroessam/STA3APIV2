@@ -20,8 +20,8 @@ module.exports = {
             jwt.verify(token, secret, (err, decoded) => {
                 User.findOne({ _id: decoded.id }, (err, user) => {
                     if (user) {
-                        user.password = null
-                        res.status(200).json({ auth: true, teams: user._teams })
+                        let teams = user.populate({path:'_teams',select:'teamName'})
+                        res.status(200).json({ auth: true, teams: teams })
                     } else {
                         res.status(400).json({ auth: false, message: 'Invalid token.' })
                     }
@@ -90,49 +90,36 @@ module.exports = {
         let token = req.headers.authorization
         token = token.substr(token.indexOf(' ') + 1)
         try {
-            jwt.verify(token, secret, (err, decoded) => {
-                User.findOne({ _id: decoded.id }, (err, user) => {
-                    if(err) {return res.status(400).json({success: false, message:'An error occured.'})}
-                    if (user) {
-                        user._adminTeams.forEach(t=>{
-                            if(t.toString() === req.body.teamID){
-                                User.findOne({username:req.body.newTeamMember},(err,newTeamMember)=>{
-                                    if(err) return res.status(400).json({ success: false, message:'User doesn\'t exist' })
-                                    Team.findByIdAndUpdate(req.body.teamID,{$push:{_members:newTeamMember._id}},(err,team)=>{
-                                        if(err) {return res.status(400).json({success: false, message:'Team doesn\'t exist'})}
-                                        newTeamMember._teams.push(team._id)
-                                        if(req.body.newTeamMemberAdmin){newTeamMember._adminTeams.push(team._id)}
-                                    })
-                                })
-                                // console.log(newMember)
-                                // Team.findOne({_id:req.body.teamID,{$push:{_members:}})
-                                // ,(err,team)=>{
-                                //     if (team){
-                                //         User.findOne({username:req.body.newTeamMember},{$push:{_members:}})
-                                //         // (err,newMember)=>{
-                                //         //     team._members.push(newMember._id)
-                                //         //     if(req.body.newTeamMemberAdmin){
-                                //         //         team._adminMembers.push(newMember._id)
-                                //         //     }
-                                //         // }
-                                //         console.log(team)
-                                //         team.save()   
-                                //         return res.status(200).json({ success: true })                                   
-                                //     }else{
-                                //         return res.status(400).json({ success: false })
-                                //     }
-
-                                // }
+            jwt.verify(token, secret, async function(err, decoded){
+                // const decoded = jwt.verify(token, secret)
+                try{
+                    const team = await Team.findOne({_id:req.body.teamID})
+                    const user = await User.findOne({_id:req.body.userID})
+                    console.log(req.body.userID)
+                    console.log(user)
+                    const member = await User.findOne({username:req.body.newTeamMember})
+                    user._adminTeams.forEach(t=>{
+                        if(t.toString() === req.body.teamID){
+                            team._members.push(member._id)     
+                            if(req.body.newTeamMemberAdmin){
+                                team._adminMembers.push(member._id)
+                                member._adminTeams.push(team._id)
                             }
-                        })
-                    } else {
-                        return res.status(400).json({ auth: false, message: 'Invalid token.' })
-                    }
-                })
+                            member._teams.push(team._id)
+                            team.save()
+                            member.save()
+                            //TODO: look into what to add to the below json
+                            return res.status(200).json({ success: true })
+                        }
+                    })
+                }
+                catch(err){
+                    console.log(err)
+                }
             })
         } catch (err) {
             console.log(err)
-            return res.status(401).json({ auth: false, message: 'User doesn\'t exist.' })
+            res.status(401).json({ auth: false, message: 'User doesn\'t exist.' })
         }
     }
 }
